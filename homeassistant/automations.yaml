@@ -1,0 +1,73 @@
+# Home Assistant — Automatizace zvlhčovače
+# ==========================================
+# Zkopíruj tento soubor do /config/automations.yaml na Raspberry Pi,
+# nebo vlož obsah do sekce automation: v configuration.yaml.
+
+# Noční režim ON (22:00) — zvýší cílovou vlhkost na 55 %
+- alias: "Zvlhčovač — Noční režim ON"
+  id: humidifier_night_on
+  description: "V 22:00 zvýší cílovou vlhkost na 55 % pro lepší spánek"
+  trigger:
+    - platform: time
+      at: "22:00:00"
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        topic: humidifier/number/target/set
+        payload: "55"
+        qos: 1
+        retain: true
+  mode: single
+
+# Noční režim OFF (07:00) — vrátí cílovou vlhkost na 50 %
+- alias: "Zvlhčovač — Noční režim OFF"
+  id: humidifier_night_off
+  description: "V 07:00 sníží cílovou vlhkost zpět na 50 %"
+  trigger:
+    - platform: time
+      at: "07:00:00"
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        topic: humidifier/number/target/set
+        payload: "50"
+        qos: 1
+        retain: true
+  mode: single
+
+# Notifikace při odpojení ESP32
+- alias: "Zvlhčovač — Offline upozornění"
+  id: humidifier_offline_alert
+  description: "Upozorní v HA dashboardu, když ESP32 ztratí spojení"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.humidifier_online
+      to: "off"
+      for:
+        seconds: 30
+  condition: []
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "Zvlhčovač offline!"
+        message: >
+          ESP32 zvlhčovač ztratil spojení s Home Assistantem
+          ({{ now().strftime('%H:%M') }}).
+          Zvlhčovač pokračuje v lokálním autonomním provozu.
+        notification_id: "humidifier_offline"
+  mode: single
+
+# Zrušení notifikace při znovupřipojení
+- alias: "Zvlhčovač — Online — zruš notifikaci"
+  id: humidifier_online_clear
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.humidifier_online
+      to: "on"
+  action:
+    - service: persistent_notification.dismiss
+      data:
+        notification_id: "humidifier_offline"
+  mode: single
