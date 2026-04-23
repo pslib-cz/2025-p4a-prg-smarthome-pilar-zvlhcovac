@@ -62,7 +62,8 @@
 // Starý projekt: 0x27 (A0=A1=A2=HIGH); pouprav dle potřeby.
 // ============================================================
 PCF8574 pcf(0x27);
-#define HUMIDIFIER_BIT 0
+#define HUMIDIFIER_BIT     0  // P0 — řídicí signál optočlenu (LOW = zapnuto)
+#define HUMIDIFIER_GND_BIT 7  // P7 — virtuální GND pro optočlen (trvale LOW)
 
 // ============================================================
 // SHT30 PŘÍKAZY
@@ -336,10 +337,13 @@ void publish_state() {
 void mqtt_reconnect() {
   if (mqtt_client.connected() || !wifi_connected) return;
 
+  Serial.printf("[MQTT] Connecting to broker %s:%d ...\n", MQTT_BROKER, MQTT_PORT);
+
   // LWT (Last Will and Testament) — HA dostane "offline" při ztrátě spojení
   if (mqtt_client.connect("humidifier_cyd", MQTT_USER, MQTT_PASS,
                            MQTT_STATUS, 1, true, "offline")) {
     mqtt_connected = true;
+    Serial.println("[MQTT] Connected!");
     mqtt_client.publish(MQTT_STATUS, "online", true);
 
     // Přihlásit se na příkazové topicy
@@ -351,6 +355,9 @@ void mqtt_reconnect() {
     publish_state();
   } else {
     mqtt_connected = false;
+    // State codes: -4=TIMEOUT -3=CONN_LOST -2=CONN_FAILED -1=DISCONNECTED
+    //               1=BAD_PROTOCOL 2=BAD_CLIENT_ID 3=UNAVAILABLE 4=BAD_CREDENTIALS 5=UNAUTHORIZED
+    Serial.printf("[MQTT] Connection FAILED — state=%d\n", mqtt_client.state());
   }
 }
 
@@ -591,7 +598,8 @@ void setup() {
 
   // PCF8574 — inicializace, při startu zvlhčovač OFF
   pcf.begin();
-  pcf.write(HUMIDIFIER_BIT, LOW);
+  pcf.write(HUMIDIFIER_GND_BIT, LOW); // P7 = virtuální GND pro optočlen (nikdy neměnit!)
+  pcf.write(HUMIDIFIER_BIT, LOW);     // P0 = řídicí signál, výchozí stav OFF
   Serial.println("[OK] PCF8574");
 
   // NVS — načti uloženou cílovou vlhkost
@@ -641,10 +649,27 @@ void setup() {
 // LOOP
 // ============================================================
 int ticks = 0;
+bool prev_wifi_connected = false;
 
 void loop() {
   // Sledování WiFi
   wifi_connected = (WiFi.status() == WL_CONNECTED);
+
+  // Detekce připojení/odpojení WiFi
+  if (wifi_connected && !prev_wifi_connected) {
+    Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+  } else if (!wifi_connected && prev_wifi_connected) {
+    Serial.println("[WiFi] Disconnected!");
+  }
+  prev_wifi_connected = wifi_connected;
+
+  // Heartbeat každých ~5 s
+  if (ticks % 5000 == 0) {
+    Serial.printf("[DBG] ticks=%d  wifi=%s  mqtt=%s\n",
+      ticks,
+      wifi_connected  ? "OK" : "NO",
+      mqtt_connected  ? "OK" : "NO");
+  }
 
   // MQTT reconnect každých ~5 s pokud odpojeno
   if (wifi_connected && ticks % 5000 == 0) {

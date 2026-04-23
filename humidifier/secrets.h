@@ -1,15 +1,3 @@
-/*
- * secrets.h — TAJNÉ PŘIHLAŠOVACÍ ÚDAJE
- * ======================================
- * Zkopíruj tento soubor jako secrets.h a vyplň své hodnoty.
- * NIKDY nenahrávej secrets.h na GitHub — přidej ho do .gitignore!
- *
- * Postup generování MQTT CA certifikátu na Raspberry Pi:
- *   openssl req -new -x509 -days 1826 -extensions v3_ca \
- *     -keyout ca.key -out ca.crt
- *   Obsah ca.crt pak vlož jako MQTT_CA_CERT níže.
- */
-
 #pragma once
 
 // ---- WiFi ----

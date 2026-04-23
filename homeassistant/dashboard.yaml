@@ -1,0 +1,72 @@
+# Home Assistant — Lovelace Dashboard
+# =====================================
+# Vlož jako nový pohled do dashboardu v HA UI,
+# nebo přidej do /config/ui-lovelace.yaml (pokud používáš YAML mód).
+
+title: Zvlhčovač
+path: humidifier
+
+cards:
+  # ── Řádek 1: Aktuální hodnoty ──────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: gauge
+        entity: sensor.humidifier_vlhkost
+        name: Vlhkost vzduchu
+        unit: "%"
+        min: 0
+        max: 100
+        needle: true
+        severity:
+          red: 0
+          yellow: 30
+          green: 50
+
+      - type: entity
+        entity: sensor.humidifier_teplota
+        name: Teplota
+        icon: mdi:thermometer
+        state_color: true
+
+  # ── Řádek 2: Ovládání ──────────────────────────────────────
+  - type: horizontal-stack
+    cards:
+      - type: number
+        entity: number.humidifier_cilova_vlhkost
+        name: Cílová vlhkost
+        icon: mdi:target
+
+      - type: button
+        entity: switch.humidifier_zvlhcovac
+        name: Zvlhčovač
+        show_state: true
+        tap_action:
+          action: toggle
+
+  # ── Řádek 3: Historie vlhkosti za 24h ─────────────────────
+  - type: history-graph
+    title: Vlhkost — posledních 24 hodin
+    hours_to_show: 24
+    refresh_interval: 60
+    entities:
+      - entity: sensor.humidifier_vlhkost
+        name: Vlhkost
+      - entity: sensor.humidifier_teplota
+        name: Teplota
+
+  # ── Řádek 4: Status a diagnostika ──────────────────────────
+  - type: entities
+    title: Stav systému
+    entities:
+      - entity: binary_sensor.humidifier_zvlhcovac_aktivni
+        name: Zvlhčovač aktivní
+        icon: mdi:water
+      - entity: binary_sensor.humidifier_online
+        name: ESP32 online
+        icon: mdi:wifi
+      - entity: sensor.humidifier_wifi_rssi
+        name: WiFi RSSI
+        icon: mdi:signal
+      - entity: sensor.humidifier_uptime
+        name: Uptime
+        icon: mdi:clock-outline

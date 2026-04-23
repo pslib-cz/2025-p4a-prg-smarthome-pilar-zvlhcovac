@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Humidifier — Dashboard</title>
+  <meta name="description" content="Sledování a ovládání automatického zvlhčovače přes MQTT" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Login overlay -->
+  <div id="login-overlay" class="overlay">
+    <div class="login-card">
+      <div class="login-logo">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="#5DADE2"/>
+        </svg>
+      </div>
+      <h1>Smart Humidifier</h1>
+      <p class="login-subtitle">Připojte se k MQTT brokeru</p>
+
+      <div class="form-group">
+        <label for="broker-url">Broker URL (wss://)</label>
+        <input id="broker-url" type="text" placeholder="wss://192.168.1.XXX:9001" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label for="mqtt-user">Uživatelské jméno</label>
+        <input id="mqtt-user" type="text" placeholder="humidifier" />
+      </div>
+      <div class="form-group">
+        <label for="mqtt-pass">Heslo</label>
+        <input id="mqtt-pass" type="password" placeholder="••••••••" />
+      </div>
+      <button id="btn-connect" class="btn-primary">Připojit</button>
+      <p id="login-error" class="error-msg hidden"></p>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="hidden">
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#5DADE2"/>
+        </svg>
+        <h1>Smart Humidifier</h1>
+      </div>
+      <div class="header-right">
+        <span id="status-dot" class="status-dot"></span>
+        <span id="status-text">Odpojeno</span>
+        <button id="btn-disconnect" class="btn-ghost">Odhlásit</button>
+      </div>
+    </header>
+
+    <!-- Grid layout -->
+    <main>
+      <!-- Card: Vlhkost -->
+      <div class="card card-humidity">
+        <div class="card-label">VLHKOST</div>
+        <div class="gauge-wrap">
+          <canvas id="gauge-humidity" width="220" height="130"></canvas>
+          <div class="gauge-value" id="val-humidity">--.-<span>%</span></div>
+        </div>
+        <div class="card-sub" id="sub-humidity">Čekání na data…</div>
+      </div>
+
+      <!-- Card: Teplota -->
+      <div class="card card-temp">
+        <div class="card-label">TEPLOTA</div>
+        <div class="big-value" id="val-temperature">--.-<span>°C</span></div>
+        <div class="card-sub" id="sub-temperature">&nbsp;</div>
+      </div>
+
+      <!-- Card: Ovládání -->
+      <div class="card card-control">
+        <div class="card-label">OVLÁDÁNÍ</div>
+
+        <div class="target-row">
+          <span class="target-label">Cílová vlhkost</span>
+          <div class="target-ctrl">
+            <button id="btn-minus" class="btn-round btn-red">−</button>
+            <span id="val-target" class="target-val">50<span>%</span></span>
+            <button id="btn-plus" class="btn-round btn-green">+</button>
+          </div>
+        </div>
+
+        <div class="power-row">
+          <span class="power-label">Zvlhčovač</span>
+          <div class="toggle-wrap">
+            <button id="btn-off"  class="btn-mode active-off"  data-mode="OFF">OFF</button>
+            <button id="btn-auto" class="btn-mode active-auto" data-mode="AUTO">AUTO</button>
+            <button id="btn-on"   class="btn-mode"             data-mode="ON">ON</button>
+          </div>
+        </div>
+
+        <div class="humidifier-status" id="humidifier-status">
+          <span id="status-icon">⏸</span>
+          <span id="status-label">Standby</span>
+        </div>
+      </div>
+
+      <!-- Card: Graf -->
+      <div class="card card-chart">
+        <div class="card-label">VLHKOST — posledních 30 min</div>
+        <canvas id="chart-humidity"></canvas>
+      </div>
+
+      <!-- Card: Diagnostika -->
+      <div class="card card-diag">
+        <div class="card-label">DIAGNOSTIKA</div>
+        <div class="diag-row"><span>WiFi RSSI</span><span id="diag-rssi">---</span></div>
+        <div class="diag-row"><span>Uptime</span><span id="diag-uptime">---</span></div>
+        <div class="diag-row"><span>MQTT broker</span><span id="diag-broker">---</span></div>
+        <div class="diag-row"><span>Poslední data</span><span id="diag-last">---</span></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/mqtt@5.7.2/dist/mqtt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
